@@ -7,6 +7,9 @@ from digitalio import DigitalInOut, Direction
 from PIL import Image, ImageDraw, ImageFont
 from adafruit_rgb_display import st7789
 import numpy as np
+
+global colli
+colli = 0
 class Joystick:
     def __init__(self):
         self.cs_pin = DigitalInOut(board.CE0)
@@ -57,31 +60,25 @@ class Joystick:
         # Make sure to create image with mode 'RGB' for color.
         self.width = self.disp.width
         self.height = self.disp.height
-class Enemy:
-    def __init__(self, spawn_position):
-        self.appearance = 'circle'
-        self.state = 100
-        self.alive = 'live'
-        self.position = np.array([spawn_position[0] - 70, spawn_position[1] - 50, spawn_position[0] + 70, spawn_position[1] + 50])
-        self.center = np.array([(self.position[0] + self.position[2]) / 2, (self.position[1] + self.position[3]) / 2])
-        self.outline = "#00FF00"
+
 class Character:
+    global colli
     def __init__(self, width, height):
         self.appearance = 'circle'
         self.state = None
-        self.position = np.array([width/2 - 10, height/2 - 10, width/2 + 10, height/2 + 10])
+        self.position = np.array([width/2 - 20, height/2 - 20, width/2 + 20, height/2 + 20])
         # 총알 발사를 위한 캐릭터 중앙 점 추가
+        self.edge = np.array([self.position[0], self.position[1], self.position[2], self.position[3]])
         self.center = np.array([(self.position[0] + self.position[2]) / 2, (self.position[1] + self.position[3]) / 2])
         self.outline = "#FFFFFF"
 
-    def move(self, command = None):
-        if command['move'] == False:
+    def move(self, command=None):
+        if command is None or not command['move']:
             self.state = None
-            self.outline = "#FFFFFF" #검정색상 코드!
-        
+            self.outline = "#FFFFFF"  # 검정색상 코드!
         else:
             self.state = 'move'
-            self.outline = "#FF0000" #빨강색상 코드!
+            self.outline = "#FF0000"  # 빨강색상 코드!
 
             if command['up_pressed']:
                 self.position[1] -= 10
@@ -94,13 +91,47 @@ class Character:
             if command['left_pressed']:
                 self.position[0] -= 10
                 self.position[2] -= 10
-                
+
             if command['right_pressed']:
                 self.position[0] += 10
                 self.position[2] += 10
                 
         #center update
         self.center = np.array([(self.position[0] + self.position[2]) / 2, (self.position[1] + self.position[3]) / 2]) 
+        self.edge = np.array([self.position[0], self.position[1], self.position[2], self.position[3]])
+
+    def collision_check(self, objects):
+        global colli
+        for obj in objects:
+            collision = self.overlap(self.position, obj.position)
+            if collision:
+                colli = 1
+
+    def overlap(self, ego_position, other_position):
+        
+        return not (ego_position[2] < other_position[0] or
+                    ego_position[0] > other_position[2] or
+                    ego_position[3] < other_position[1] or
+                    ego_position[1] > other_position[3])
+
+class Objects:
+    def __init__(self, spawn_position):
+        self.appearance = 'rectangle'
+        self.state = 'UP'
+        self.position = np.array([spawn_position[0] - 15, spawn_position[1] - 15, spawn_position[0] + 15, spawn_position[1] + 15])
+        self.center = np.array([(self.position[0] + self.position[2]) / 2, (self.position[1] + self.position[3]) / 2])
+        self.outline = "#00FF00"
+
+        
+
+class Goal:
+    def __init__(self, spawn_position):
+        self.appearance = 'rectangle'
+        self.state = 'UP'
+        self.position = np.array([spawn_position[0] - 25, spawn_position[1] - 25, spawn_position[0] + 25, spawn_position[1] + 25])
+        self.center = np.array([(self.position[0] + self.position[2]) / 2, (self.position[1] + self.position[3]) / 2])
+        self.outline = "#00FF00"
+
 class Bullet:
     def __init__(self, position, command):
         self.appearance = 'rectangle'
@@ -143,8 +174,6 @@ class Bullet:
             collision = self.overlap(self.position, enemy.position)
             
             if collision:
-                enemy.state -= self.damage
-                print(enemy.state)
                 if enemy.state == 0:
                     enemy.alive = 'die'
                 self.state = 'hit'
@@ -162,65 +191,138 @@ class Bullet:
                  and ego_position[2] < other_position[2] and ego_position[3] < other_position[3]
     
 def main():
+    global colli
+    colli = 0
     joystick = Joystick()
     my_image = Image.new("RGB", (joystick.width, joystick.height))
     my_draw = ImageDraw.Draw(my_image)
     my_draw.rectangle((0, 0, joystick.width, joystick.height), fill=(255, 0, 0, 100))
     joystick.disp.image(my_image)
+    posi = 15
     # 잔상이 남지 않는 코드 & 대각선 이동 가능
     my_circle = Character(joystick.width, joystick.height)
     my_draw.rectangle((0, 0, joystick.width, joystick.height), fill = (255, 255, 255, 100))
-    #enemy_1 = Enemy((100, 100))
-    enemy_2 = Enemy((122.5, 40))
-    #enemy_3 = Enemy((150, 50))
+    object_1 = Objects((posi,posi))
+    object_2 = Objects((posi*3,posi))
+    object_3 = Objects((posi*5,posi))
+    object_4 = Objects((posi*7,posi))
+    object_5 = Objects((posi*9,posi))
+    object_11 = Objects((posi*11,posi))
+    object_15 = Objects((posi*13,posi))
+    object_14 = Objects((posi*15,posi))
 
-    enemys_list = [enemy_2]
+    object_6 = Objects((posi,posi*3))
+    object_7 = Objects((posi,posi*5))
+    object_8 = Objects((posi,posi*7))
+    object_9 = Objects((posi,posi*9))
+    object_10 = Objects((posi,posi*11))
+    object_12 = Objects((posi,posi*13))
+    object_13 = Objects((posi,posi*15))
 
-    bullets = []
+    object_16 = Objects((posi*3,posi*15))
+    object_17 = Objects((posi*5,posi*15))
+    object_18 = Objects((posi*7,posi*15))
+    object_19 = Objects((posi*9,posi*15))
+    object_20 = Objects((posi*11,posi*15))
+    object_21 = Objects((posi*13,posi*15))
+    object_22 = Objects((posi*15,posi*15))
+
+    object_23 = Objects((posi*15,posi*3))
+    object_24 = Objects((posi*15,posi*5))
+    object_25 = Objects((posi*15,posi*7))
+    object_26 = Objects((posi*15,posi*9))
+    object_27 = Objects((posi*15,posi*11))
+    object_28 = Objects((posi*15,posi*13))
+
+    objects_list = [object_1, object_2, object_3, object_4, object_5, object_6, object_7,object_8,object_9,object_10, object_11, object_12
+                    , object_13, object_14, object_15, object_16, object_17, object_18, object_19, object_20, object_21
+                    ,object_22, object_23, object_24, object_25, object_26, object_27, object_28]
+    direction_1 = 'A'
+    direction_2 = 'A'
+    direction_3 = 'A'
+    direction_4 = 'A'
+    direction_count = 0
+    direction_list = [direction_1, direction_2, direction_3, direction_4]
     while True:
-        command = {'move': False, 'up_pressed': False , 'down_pressed': False, 'left_pressed': False, 'right_pressed': False}
+        while direction_count < 4:
+            #command = {'move': False, 'up_pressed': False , 'down_pressed': False, 'left_pressed': False, 'right_pressed': False}
         
-        if not joystick.button_U.value:  # up pressed
-            command['up_pressed'] = True
-            command['move'] = True
+            if not joystick.button_U.value:  # up pressed
+                direction_list[direction_count] = 'U'
+                print(direction_count)
+                direction_count += 1
+                time.sleep(0.2)
 
-        if not joystick.button_D.value:  # down pressed
-            command['down_pressed'] = True
-            command['move'] = True
+            if not joystick.button_D.value:  # down pressed
+                direction_list[direction_count] = 'D'
+                print(direction_count)
+                direction_count += 1
+                time.sleep(0.2)
 
-        if not joystick.button_L.value:  # left pressed
-            command['left_pressed'] = True
-            command['move'] = True
+            if not joystick.button_L.value:  # left pressed
+                direction_list[direction_count] = 'L'
+                print(direction_count)
+                direction_count += 1
+                time.sleep(0.2)
 
-        if not joystick.button_R.value:  # right pressed
-            command['right_pressed'] = True
-            command['move'] = True
+            if not joystick.button_R.value:  # right pressed
+                direction_list[direction_count] = 'R'
+                print(direction_count)
+                direction_count += 1
+                time.sleep(0.2)
 
-        if not joystick.button_A.value: # A pressed
-            bullet = Bullet(my_circle.center, command)
-            bullets.append(bullet)
+            if not joystick.button_A.value: # A pressed
+                direction_count = 0
+                print(direction_count)
+                time.sleep(0.2)
 
-        my_circle.move(command)
-        for bullet in bullets:
-            bullet.collision_check(enemys_list)
-            bullet.move()
+            my_draw.rectangle((0, 0, joystick.width, joystick.height), fill = (255, 255, 255, 100))
+            my_draw.ellipse(tuple(my_circle.position), outline = my_circle.outline, fill = (0, 0, 0))
+        
+            for object in objects_list:
+                my_draw.rectangle(tuple(object.position), outline = object.outline, fill = (255, 0, 0))
             
-        #그리는 순서가 중요합니다. 배경을 먼저 깔고 위에 그림을 그리고 싶었는데 그림을 그려놓고 배경으로 덮는 결과로 될 수 있습니다.
-        my_draw.rectangle((0, 0, joystick.width, joystick.height), fill = (255, 255, 255, 100))
-        my_draw.ellipse(tuple(my_circle.position), outline = my_circle.outline, fill = (0, 0, 0))
-        
-        for enemy in enemys_list:
-            if enemy.alive != 'die' :
-                my_draw.ellipse(tuple(enemy.position), outline = enemy.outline, fill = (255, 0, 0))
+            #좌표는 동그라미의 왼쪽 위, 오른쪽 아래 점 (x1, y1, x2, y2)
+            joystick.disp.image(my_image)
+        print(direction_list)
+        for i in range(4):
+            colli = 0
+            while colli == 0:
+                command = {'move': False, 'up_pressed': False , 'down_pressed': False, 'left_pressed': False, 'right_pressed': False}
+                if direction_list[i] == 'U':
+                    command['up_pressed'] = True
+                    command['move'] = True
+                if direction_list[i] == 'D':
+                    command['down_pressed'] = True
+                    command['move'] = True
+                if direction_list[i] == 'L':
+                    command['left_pressed'] = True
+                    command['move'] = True
+                if direction_list[i] == 'R':
+                    command['right_pressed'] = True
+                    command['move'] = True
+                
+                my_circle.move(command)
 
-        for bullet in bullets:
-            if bullet.state != 'hit':
-                my_draw.rectangle(tuple(bullet.position), outline = bullet.outline, fill = (0, 0, 255))
-
-        #좌표는 동그라미의 왼쪽 위, 오른쪽 아래 점 (x1, y1, x2, y2)
-        joystick.disp.image(my_image)
+                
+                my_circle.collision_check(objects_list)
+                #그리는 순서가 중요합니다. 배경을 먼저 깔고 위에 그림을 그리고 싶었는데 그림을 그려놓고 배경으로 덮는 결과로 될 수 있습니다.
+                my_draw.rectangle((0, 0, joystick.width, joystick.height), fill = (255, 255, 255, 100))
+                my_draw.ellipse(tuple(my_circle.position), outline = my_circle.outline, fill = (0, 0, 0))
         
-        
+                for object in objects_list:
+                    my_draw.rectangle(tuple(object.position), outline = object.outline, fill = (255, 0, 0))
+            
+                #좌표는 동그라미의 왼쪽 위, 오른쪽 아래 점 (x1, y1, x2, y2)
+                joystick.disp.image(my_image)
+                
+            my_draw.rectangle((0, 0, joystick.width, joystick.height), fill = (255, 255, 255, 100))
+            my_draw.ellipse(tuple(my_circle.position), outline = my_circle.outline, fill = (0, 0, 0))
+    
+            for object in objects_list:
+                my_draw.rectangle(tuple(object.position), outline = object.outline, fill = (255, 0, 0))
+            
+            joystick.disp.image(my_image)
 
 if __name__ == '__main__':
     main()
