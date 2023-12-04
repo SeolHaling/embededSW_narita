@@ -1,7 +1,6 @@
 from src.testing_game import *
 import time
 from PIL import Image, ImageDraw, ImageFont
-from adafruit_rgb_display import st7789
 from digitalio import DigitalInOut, Direction, Pull
 
 class Menu:
