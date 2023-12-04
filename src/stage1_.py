@@ -147,12 +147,7 @@ class Goal:
 def game_over_screen(joystick):
     clear_image = Image.new("RGB", (joystick.width, joystick.height))
     clear_draw = ImageDraw.Draw(clear_image)
-
-    # Load a font and set the size to 36
-    font_size = 40
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-
-    clear_draw.text((10, 100), "CLEAR!!!", font=font, fill=(255, 255, 255))
+    clear_draw.text((50, 100), "CLEAR!!!", font=None, fill=(255, 255, 255))
     joystick.disp.image(clear_image)
     time.sleep(2)
 
@@ -162,20 +157,16 @@ def list_count(joystick, count, direction_list, max_direction_count):
 
     # Use a larger font
     font_size = 15
-    # Adjust the font path based on your system
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    font = ImageFont.truetype(font_path, font_size)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
 
     # Display all elements of direction_list
     directions_str = ', '.join(direction_list)
     count_str = f"Count: {count}\nMax Count: {max_direction_count}\nDirections: {directions_str}"  # Convert count to string
-
-    # Get the text size using textbbox
-    text_bbox = clear_draw.textbbox((0, 0), count_str, font=font)
+    text_width, text_height = clear_draw.textsize(count_str, font)
 
     # Center the text on the screen
-    x = (joystick.width - text_bbox[2]) // 2
-    y = (joystick.height - text_bbox[3]) // 2
+    x = (joystick.width - text_width) // 2
+    y = (joystick.height - text_height) // 2
 
     clear_draw.text((x, y), count_str, font=font, fill=(255, 255, 255))
     joystick.disp.image(clear_image)
