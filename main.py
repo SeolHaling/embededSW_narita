@@ -27,9 +27,9 @@ class Menu:
     def show_help_screen(self):
         while True:
             self.clear_draw.rectangle((0, 0, self.width, self.height), fill=(255, 255, 255))
-            font_size = 20
+            font_size = 23
             font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-            help_text = "Welcome to NARITA!\n\nYou can specify a \nIf you move your \ncharacter a set \nnumber of times and \nreach the goal, \nyou win!"
+            help_text = "Welcome to \nNARITA!\n\nLet's coding your \ndrone and reach\nthe Goal!!"
             self.clear_draw.text((5, 10), help_text, font=font, fill=(0, 0, 0))
             self.joystick.disp.image(self.clear_image)
 
@@ -51,7 +51,16 @@ def game_starter():
     while True:
         menu.show_title_screen()
         menu.wait_for_button_press()
+        show_stage_title(joystick, 'tutorial')
+        tutorial()
+        show_stage_title(joystick, 'stage1')
         stage1()
+        show_stage_title(joystick, 'stage2')
+        stage2()
+        show_stage_title(joystick, 'last stage')
+        stage3()
+        show_stage_title(joystick, 'Finish!!')
+        break
 
 if __name__ == "__main__":
     game_starter()
